@@ -15,7 +15,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638599301564565162
+  lastModified: 638604540910681689
   FileSizes:
   - Name: Desktop
     Value: 1760
@@ -35,7 +35,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/SFX.bank
   Name: SFX
   StudioPath: bank:/SFX
-  lastModified: 638599301564798439
+  lastModified: 638604540910687329
   FileSizes:
   - Name: Desktop
     Value: 12224
@@ -55,7 +55,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/Music.bank
   Name: Music
   StudioPath: bank:/Music
-  lastModified: 638599301564613880
+  lastModified: 638604540910683945
   FileSizes:
   - Name: Desktop
     Value: 494
@@ -75,7 +75,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/Dialogue_CN.bank
   Name: Dialogue_CN
   StudioPath: bank:/Dialogue_CN
-  lastModified: 638599301562203036
+  lastModified: 638604540910656113
   FileSizes:
   - Name: Desktop
     Value: 52416
@@ -95,7 +95,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/Dialogue_JP.bank
   Name: Dialogue_JP
   StudioPath: bank:/Dialogue_JP
-  lastModified: 638599301563966715
+  lastModified: 638604540910676502
   FileSizes:
   - Name: Desktop
     Value: 66560
@@ -134,7 +134,7 @@ MonoBehaviour:
   - {fileID: 6489368958632680939}
   StringsBanks:
   - {fileID: -9199581556411729682}
-  cacheTime: 638599301564862047
+  cacheTime: 638604540910691397
   cacheVersion: 131619
 --- !u!114 &554775358072172342
 MonoBehaviour:
@@ -178,7 +178,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/Dialogue_EN.bank
   Name: Dialogue_EN
   StudioPath: bank:/Dialogue_EN
-  lastModified: 638599301563134023
+  lastModified: 638604540910664921
   FileSizes:
   - Name: Desktop
     Value: 61120
@@ -198,7 +198,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/VO.bank
   Name: VO
   StudioPath: bank:/VO
-  lastModified: 638599301564862047
+  lastModified: 638604540910689403
   FileSizes:
   - Name: Desktop
     Value: 494
@@ -327,7 +327,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638599301564555164
+  lastModified: 638604540910679463
   FileSizes:
   - Name: Desktop
     Value: 27200
@@ -347,7 +347,7 @@ MonoBehaviour:
   Path: Assets/Examples/Build/Desktop/Vehicles.bank
   Name: Vehicles
   StudioPath: bank:/Vehicles
-  lastModified: 638599301564823884
+  lastModified: 638604540910691397
   FileSizes:
   - Name: Desktop
     Value: 494
