@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/AudioLatencySample.unity
-    guid: fe64ef98044794f39867b8910a2b1ac1
+    path: Assets/Scenes/TouchTest.unity
+    guid: 9791306db67c9f94eb7913884bd75978
   m_configObjects: {}
