@@ -353,7 +353,7 @@ MonoBehaviour:
   LiveUpdatePort: 9264
   EnableMemoryTracking: 1
   AndroidUseOBB: 0
-  AndroidPatchBuild: 0
+  AndroidPatchBuild: 1
   MeterChannelOrdering: 0
   StopEventsOutsideMaxDistance: 0
   BoltUnitOptionsBuildPending: 0

@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TouchTest.unity
     guid: 9791306db67c9f94eb7913884bd75978
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 070bf8e8baa2e2c4582123b8ffd6811d, type: 2}
+    com.unity.adaptiveperformance.simulator.provider_settings: {fileID: 11400000, guid: c341f0827f820cc459ca49d54cb89c56, type: 2}
+    com.unity.input.settings: {fileID: 11400000, guid: 7a53af801af08e340b177c44a2088a16, type: 2}
