@@ -1,9 +1,3 @@
-//
-//  NativeTouchRecognizer.h
-//  Unity-iPhone
-//
-//  Created by Sirawat Pitaksarit on 2017/10/30.
-//
 
 #ifndef NativeTouchRecognizer_h
 #define NativeTouchRecognizer_h
@@ -11,15 +5,25 @@
 #import <UIKit/UIKit.h>
 #import <UIKit/UIGestureRecognizerSubclass.h>
 
-@interface NativeTouchRecognizer : UIGestureRecognizer
-{
- 
-}
+// Typedef for the callback function pointer
+typedef void (*NativeTouchDelegate)(int x, int y, double iosTimeInMilliseconds, int state);
+typedef void (*NativeTimestampDelegate)(const char* timestamp);
 
-+ (void) StartNativeTouch;
-+ (void) StopNativeTouch;
-+ (NativeTouchRecognizer*) GetInstance;
+@interface NativeTouchRecognizer : UIGestureRecognizer
+
+// Class methods
++ (void)StartNativeTouchWithCallback:(NativeTouchDelegate)nativeTouchDelegate;
++ (void)StopNativeTouch;
++ (NativeTouchRecognizer*)GetInstance;
++ (void)PrintIOSTimeStampWithCallback:(NativeTimestampDelegate)timestampCallback;
++ (void)PrintIOSTimeStamp;
+
+// Public methods
++ (CGPoint)scaledCGPoint:(CGPoint)point;
++ (NSString *)GetCurrentDateTimeAsString;
++ (double)GetCurrentTimeInMilliseconds;
 
 @end
 
-#endif
+#endif /* NativeTouchRecognizer_h */
+

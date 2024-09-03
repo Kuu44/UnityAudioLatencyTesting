@@ -83,11 +83,11 @@ public class UpdateCounter : MonoBehaviour
           // Manually process input events right before the physics update
           InputSystem.Update();
 
-          if (isTouching)
-          {
-               // Handle the touch position here
-               Debug.Log($"Touching at: {touchPosition}");
-          }
+          // if (isTouching)
+          // {
+          //      // Handle the touch position here
+          //      Debug.Log($"Touching at: {touchPosition}");
+          // }
 
           if (fixedUpdateCount < maxFixedUpdateSamples)
                fixedUpdateTimes[fixedUpdateCount] = Time.realtimeSinceStartup;
@@ -113,10 +113,10 @@ public class UpdateCounter : MonoBehaviour
 
      private void OnTouch(InputAction.CallbackContext context)
      {
-          PrintCurrentTimeStamp("Touched on:");
+          // PrintCurrentTimeStamp("Touched on:");
           isTouching = true;
           touchPosition = context.ReadValue<Vector2>();
-          Debug.Log($"Touching at: {touchPosition}");
+          Debug.Log($"[Update Counter]: Touching at: {touchPosition} | Phase: {context.phase} | Time:{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}");
 
      }
 
@@ -152,10 +152,10 @@ public class UpdateCounter : MonoBehaviour
           yield return new WaitForSecondsRealtime(1f);
 
           // Output the counts
-          Debug.LogWarning("FixedUpdate count: " + fixedUpdateCount);
-          Debug.LogWarning("Update count: " + updateCount);
-          Debug.LogWarning("LateUpdate count: " + lateUpdateCount);
-          Debug.LogWarning("OnGUI count: " + onGUICount);
+          // Debug.LogWarning("FixedUpdate count: " + fixedUpdateCount);
+          // Debug.LogWarning("Update count: " + updateCount);
+          // Debug.LogWarning("LateUpdate count: " + lateUpdateCount);
+          // Debug.LogWarning("OnGUI count: " + onGUICount);
 
           //Set Maximums
           if (maxUpdateCount < updateCount)
@@ -196,7 +196,7 @@ public class UpdateCounter : MonoBehaviour
 
           float mean = sum / length;
 
-          Debug.LogWarning("FixedUpdate Sum:" + sum * 1000.0f + "ms, Mean: " + mean * 1000.0f + "ms");
+          // Debug.LogWarning("FixedUpdate Sum:" + sum * 1000.0f + "ms, Mean: " + mean * 1000.0f + "ms");
           float sumOfSquares = 0f;
           foreach (float delta in deltaTimes)
           {
@@ -205,7 +205,7 @@ public class UpdateCounter : MonoBehaviour
           }
 
           standardDeviation = Mathf.Sqrt(sumOfSquares / length);
-          Debug.LogWarning("FixedUpdate Standard Deviation: " + standardDeviation);
+          // Debug.LogWarning("FixedUpdate Standard Deviation: " + standardDeviation);
 
           maxGUIText.text = standardDeviation.ToString("F5");
 
@@ -233,7 +233,7 @@ public class UpdateCounter : MonoBehaviour
                Debug.Log("FixedUpdate rate set to: " + rate + " calls per second");
           }
      }
-     private void PrintCurrentTimeStamp(string preText="")
+     private void PrintCurrentTimeStamp(string preText = "")
      {
           // Get the current system time with millisecond accuracy
           DateTime now = DateTime.Now;
