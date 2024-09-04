@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using System;
+using UnityEngine.InputSystem.LowLevel;
 
 public class UpdateCounter : MonoBehaviour
 {
@@ -83,11 +84,11 @@ public class UpdateCounter : MonoBehaviour
           // Manually process input events right before the physics update
           InputSystem.Update();
 
-          // if (isTouching)
-          // {
-          //      // Handle the touch position here
-          //      Debug.Log($"Touching at: {touchPosition}");
-          // }
+          //if (isTouching)
+          //{
+          //     // Handle the touch position here
+          //     Debug.Log($"Touching at: {touchPosition}");
+          //}
 
           if (fixedUpdateCount < maxFixedUpdateSamples)
                fixedUpdateTimes[fixedUpdateCount] = Time.realtimeSinceStartup;
@@ -102,6 +103,9 @@ public class UpdateCounter : MonoBehaviour
           touchInputActions.Enable();
           touchInputActions.TouchControls.TouchPosition.performed += ctx => OnTouch(ctx);
           touchInputActions.TouchControls.TouchPosition.canceled += ctx => OnTouchCanceled(ctx);
+
+          // Subscribe to input event
+          InputSystem.onEvent += OnInputEvent;
      }
 
      private void OnDisable()
@@ -109,6 +113,9 @@ public class UpdateCounter : MonoBehaviour
           touchInputActions.Disable();
           touchInputActions.TouchControls.TouchPosition.performed -= ctx => OnTouch(ctx);
           touchInputActions.TouchControls.TouchPosition.canceled -= ctx => OnTouchCanceled(ctx);
+
+          // Unsubscribe from input event
+          InputSystem.onEvent -= OnInputEvent;
      }
 
      private void OnTouch(InputAction.CallbackContext context)
@@ -123,6 +130,26 @@ public class UpdateCounter : MonoBehaviour
      private void OnTouchCanceled(InputAction.CallbackContext context)
      {
           isTouching = false;
+     }
+   
+     private void OnInputEvent(InputEventPtr eventPtr, InputDevice device)
+     {
+          if (device is Touchscreen)
+          {
+               if (eventPtr.IsA<StateEvent>() || eventPtr.IsA<DeltaStateEvent>())
+               {
+                    // Get the timestamp of the input event
+                    double inputEventTimestamp = eventPtr.time;
+
+                    // Get the current time since startup
+                    float currentTime = Time.realtimeSinceStartup;
+
+                    // Calculate the lag in milliseconds
+                    double inputLagMs = (currentTime - inputEventTimestamp) * 1000.0;
+
+                    Debug.Log($"Input Lag: {inputLagMs} ms");
+               }
+          }
      }
 
      void Update()
