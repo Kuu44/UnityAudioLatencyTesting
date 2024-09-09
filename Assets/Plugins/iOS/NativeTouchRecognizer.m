@@ -1,4 +1,5 @@
 #import "NativeTouchRecognizer.h"
+#import "NativeAudio.h"
 #import "UnityAppController.h"
 #import "UnityView.h"
 
@@ -11,6 +12,9 @@ CGFloat screenScale;
 
 static double appStartTime; // Static variable to store the app start time
 
+static int audioBufferIndex = -1;
+static int audioSourceIndex = -1;
+
 typedef void (*NativeTouchDelegate)(int x, int y, double elapsedTime, int state);
 typedef void (*NativeTimestampDelegate)(const char* timestamp);
 
@@ -22,8 +26,25 @@ NativeTimestampDelegate timestampCallback;
         // Record the app start time when the class is initialized
         appStartTime = [NativeTouchRecognizer GetCurrentTimeInMilliseconds];
 
+
         NSLog(@"[Native] App Start Time recorded: %f", [NativeTouchRecognizer GetCurrentTimeInMilliseconds]);
         [NativeTouchRecognizer PrintIOSTimeStamp];
+        
+        //Initialise Sound
+        _Initialize();//OpenAL and NativeAudio
+
+        //Load audio buffer and get index
+        audioBufferIndex = _LoadAudio("A1.wav", 0);
+
+        if(audioBufferIndex != -1){
+            //get a source for playback
+            audioSourceIndex = _GetNativeSource(-1); //gets a round robin audio source 
+        }
+
+        if(audioSourceIndex != -1){
+            //prepare the buffer to the source
+            _PrepareAudio(audioBufferIndex, audioSourceIndex);
+        }
     }
 }
 
@@ -35,7 +56,25 @@ NativeTimestampDelegate timestampCallback;
     }
     return gestureRecognizer;
 }
++ (void)PlayTouchSound {
+    NSLog(@"[Native] Started Playing touch sound at %@", [NativeTouchRecognizer GetCurrentDateTimeAsString]);
+    
+    if(audioSourceIndex != -1){
+        NativeAudioPlayAdjustment playAdjustment;
+        playAdjustment.volume = 1.0f;
+        playAdjustment.pan = 0.0f; // Set pan (0 is center, -1 if left, 1 is right)
+        playAdjustment.offsetSeconds = 0.0f; // Start at the beginnning of the sound
+        playAdjustment.trackLoop = falseď
 
+        //Play the prepared sound
+        _PlayAudioWithNativeSourceIndex(audioSourceIndex, playAdjustment);
+    }
+    // if (audioPlayer) {
+    //     [audioPlayer play];
+    
+    NSLog(@"[Native] begun Playing touch sound at %@", [NativeTouchRecognizer GetCurrentDateTimeAsString]);
+    // }
+}
 + (void)StopNativeTouch
 {
     [unityView removeGestureRecognizer:gestureRecognizer];
@@ -58,7 +97,7 @@ NativeTimestampDelegate timestampCallback;
 
 +(CGPoint)scaledCGPoint:(CGPoint)point
 {
-    return CGPointMake(point.x * screenScale, point.y * screenScale);
+    return CGPointMake(point.x * screenScale, screenSize.size.height - point.y * screenScale);
 }
 
 +(NSString *)elapsedTimeSinceAppStart
@@ -101,7 +140,6 @@ NativeTimestampDelegate timestampCallback;
     NSString *currentTimeStamp = [NativeTouchRecognizer GetCurrentDateTimeAsString];
     
     NSLog(@"[Native] Current Time Stamp: %@", currentTimeStamp);
-    NSLog(@"[Native] Current TimeElapsed: %@", [NativeTouchRecognizer elapsedTimeSinceAppStart]);
 
     if (timestampCallback != nil)
     {
@@ -122,37 +160,43 @@ NativeTimestampDelegate timestampCallback;
 {
     return [[NSDate date] timeIntervalSince1970] * 1000;
 }
-+(void)sendTouchesToUnity:(NSSet<UITouch*> *)touches withPhase:(int)phase
++(void)sendTouchesToUnity:(NSSet<UITouch*> *)touches
 {
     NSArray<UITouch *>* touchesArray = [touches allObjects];
     for (UITouch* touch in touchesArray)
     {
+        // Get the touch phase directly from the UITouch object
+        UITouchPhase phase = touch.phase;
+
         CGPoint location = [NativeTouchRecognizer scaledCGPoint:[touch locationInView:nil]];
-        
         double iosTimestampMS = [NativeTouchRecognizer GetCurrentTimeInMilliseconds];
 
-        NSLog(@"[Native] Touch at position: (%.2f, %.2f) | Phase: %d | Time:  %@",
-        location.x, location.y, phase, [NativeTouchRecognizer GetCurrentDateTimeAsString]);
+        NSLog(@"[Native] Touch at position: (%.2f, %.2f) | Phase: %ld | Time: %@",
+              location.x, location.y, (long)phase, [NativeTouchRecognizer GetCurrentDateTimeAsString]);
 
-    if (callback != nil){
-            callback((int)location.x, (int)location.y, iosTimestampMS, phase);
+        if (callback != nil) {
+            callback((int)location.x, (int)location.y, iosTimestampMS, (int)phase);
         }
     }
 }
 
 -(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    [NativeTouchRecognizer sendTouchesToUnity:touches withPhase:0];
+
+    NSLog(@"[Native] Detected phase 0 and playing sound | Time: %@", [NativeTouchRecognizer GetCurrentDateTimeAsString]);
+    [NativeTouchRecognizer PlayTouchSound];
+
+    [NativeTouchRecognizer sendTouchesToUnity:touches];
 }
 
 -(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    [NativeTouchRecognizer sendTouchesToUnity:touches withPhase:1];
+    [NativeTouchRecognizer sendTouchesToUnity:touches];
 }
 
 -(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    [NativeTouchRecognizer sendTouchesToUnity:touches withPhase:2];
+    [NativeTouchRecognizer sendTouchesToUnity:touches];
 }
 
 @end
@@ -172,144 +216,3 @@ extern void _PrintIOSTimeStamp(NativeTimestampDelegate timestampCallback)
     [NativeTouchRecognizer PrintIOSTimeStampWithCallback:timestampCallback];
 }
 
-/*
-//
-//  NativeTouchRecognizer.m
-#define LOG_UNITY_MESSAGE
-
-#import "NativeTouchRecognizer.h"
-#import "UnityAppController.h"
-#import "UnityView.h"
-
-@implementation NativeTouchRecognizer
-
-NativeTouchRecognizer* gestureRecognizer;
-UnityView* unityView;
-CGRect screenSize;
-CGFloat screenScale;
-
-const char* _gameObjectName = "N";
-const char* _methodName = "T";
-
-typedef void (*NativeTouchDelegate)(int x, int y, int state);
-NativeTouchDelegate callback;
-
-+ (NativeTouchRecognizer*) GetInstance
-{
-    if(gestureRecognizer == nil)
-    {
-        gestureRecognizer = [[NativeTouchRecognizer alloc] init];
-    }
-    return gestureRecognizer;
-}
-
-+ (void) StopNativeTouch
-{
-    [unityView removeGestureRecognizer:gestureRecognizer];
-}
-
-+ (void) StartNativeTouch
-{
-    UnityAppController* uiApp = GetAppController();
-    
-    unityView = [uiApp unityView];
-    screenScale = [[UIScreen mainScreen]scale];
-    screenSize = [unityView bounds];
-    
-    NSLog(@"Starting native touch - Screen : %@ Scale : %f",NSStringFromCGRect(screenSize),screenScale);
-    
-    gestureRecognizer = [[NativeTouchRecognizer alloc] init];
-    [unityView addGestureRecognizer:gestureRecognizer];
-    
-}
-
-+(CGPoint) scaledCGPoint:(CGPoint)point
-{
-    //Retina display have /2 scale and have a smallest unit of pixel as 0.5.
-    //This will multiply it back and eliminate the floating point
-    
-    //0,0 is at the top left of portrait orientation.
-    
-    return CGPointMake(point.x*screenScale, point.y*screenScale);
-}
-
-#ifdef LOG_TOUCH
-+(void) logTouches:(NSSet<UITouch*> *) touches
-{
-    NSArray<UITouch *>* touchesArray = [touches allObjects];
-    for(int i = 0; i < [touchesArray count]; i++) {
-        UITouch* touch = touchesArray[i];
-        NSLog(@"#%d Loc:%@ Prev:%@ Radius:%f Phase:%d",
-              i,
-              NSStringFromCGPoint([NativeTouchRecognizer scaledCGPoint:[touch locationInView:nil]]),
-              NSStringFromCGPoint([NativeTouchRecognizer scaledCGPoint:[touch previousLocationInView:nil]]),
-              [touch majorRadius],
-              [touch phase]);
-    }
-}
-#endif
-
- +(const char*) encodeTouch: (UITouch*) touch
- {
-     CGPoint location = [NativeTouchRecognizer scaledCGPoint:[touch locationInView:nil]];
-     return [[NSString stringWithFormat:@"%d-%d-%d", (int)location.x, (int)location.y,[touch phase]] UTF8String];
- }
-
-+(void) sendTouchesToUnity:(NSSet<UITouch*> *) touches
-{
-    NSArray<UITouch *>* touchesArray = [touches allObjects];
-    for(UITouch* touch in touchesArray)
-    {
-#ifdef LOG_UNITY_MESSAGE
-        NSLog(@"To Unity : %@",[NSString stringWithCString:[NativeTouchRecognizer encodeTouch:touch] encoding:NSUTF8StringEncoding]);
-#endif
-        CGPoint location = [NativeTouchRecognizer scaledCGPoint:[touch locationInView:nil]];
-
-        callback( (int)location.x, (int) location.y, (int)[touch phase]);
-
-        // if([touch phase] == UITouchPhaseBegan)
-        // {
-        //     [[IosNativeAudio GetInstance] PlaySoundIos];
-        // }
-    }
-}
-
--(void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
-{
-#ifdef LOG_TOUCH
-    [NativeTouchRecognizer logTouches:touches];
-#endif
-    [NativeTouchRecognizer sendTouchesToUnity:touches];
-}
-
--(void) touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
-{
-#ifdef LOG_TOUCH
-    [NativeTouchRecognizer logTouches:touches];
-#endif
-    [NativeTouchRecognizer sendTouchesToUnity:touches];
-}
-
--(void) touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
-{
-#ifdef LOG_TOUCH
-    [NativeTouchRecognizer logTouches:touches];
-#endif
-    [NativeTouchRecognizer sendTouchesToUnity:touches];
-}
-
-@end
-
-extern "C" {
-
-    void _StopNativeTouch() {
-        [NativeTouchRecognizer StopNativeTouch];
-    }
-    
-    void _StartNativeTouch(NativeTouchDelegate nativeTouchDelegate) {
-        callback = nativeTouchDelegate;
-        [NativeTouchRecognizer StartNativeTouch];
-    }
-    
-}
-*/

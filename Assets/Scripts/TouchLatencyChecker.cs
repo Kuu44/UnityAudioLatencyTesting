@@ -63,19 +63,22 @@ public class TouchLatencyChecker : MonoBehaviour
 
     private void Update()
     {
-        if (Touchscreen.current.primaryTouch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
+        foreach (var touch in Touchscreen.current.touches)
         {
-            double unityEventTimestamp = GetCurrentTimeInMilliseconds();
-            Vector2 unityTouchPosition = Touchscreen.current.primaryTouch.position.ReadValue();
+            if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
+            {
+                double unityEventTimestamp = GetCurrentTimeInMilliseconds();
+                Vector2 unityTouchPosition = Touchscreen.current.primaryTouch.position.ReadValue();
 
-            // Log the Unity timestamp in hh:mm:ss.mmm format
-            Debug.Log($"[Unity InputSystem] Unity Touch Timestamp: {instance.GetCurrentDateTimeAsString()} with Phase: {Touchscreen.current.primaryTouch.phase.ReadValue()}");
+                // Log the Unity timestamp in hh:mm:ss.mmm format
+                Debug.Log($"[Unity InputSystem] Unity Touch Timestamp: {instance.GetCurrentDateTimeAsString()} with Phase: {Touchscreen.current.primaryTouch.phase.ReadValue()}");
 
-            double touchLatencyMs = unityEventTimestamp - iosTouchTimestamp;
-            Vector2 positionDifference = unityTouchPosition - iosTouchPosition;
+                double touchLatencyMs = unityEventTimestamp - iosTouchTimestamp;
+                Vector2 positionDifference = unityTouchPosition - iosTouchPosition;
 
-            Debug.Log($"[Unity InputSystem] Touch Latency: {touchLatencyMs:F3} ms");
-            Debug.Log($"[Unity InputSystem] iOS Touch Position: {iosTouchPosition}, Unity Touch Position: {unityTouchPosition}, Difference: {positionDifference}");
+                Debug.Log($"[Unity InputSystem] Touch Latency: {touchLatencyMs:F3} ms");
+                Debug.Log($"[Unity InputSystem] iOS Touch Position: {iosTouchPosition}, Unity Touch Position: {unityTouchPosition}, Difference: {positionDifference}, Frame Number: {Time.frameCount}");
+            }
         }
     }
     private string GetCurrentDateTimeAsString()

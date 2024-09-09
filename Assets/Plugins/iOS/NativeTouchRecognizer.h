@@ -1,4 +1,3 @@
-
 #ifndef NativeTouchRecognizer_h
 #define NativeTouchRecognizer_h
 
@@ -17,6 +16,9 @@ typedef void (*NativeTimestampDelegate)(const char* timestamp);
 + (NativeTouchRecognizer*)GetInstance;
 + (void)PrintIOSTimeStampWithCallback:(NativeTimestampDelegate)timestampCallback;
 + (void)PrintIOSTimeStamp;
+
+//Audio methods
++ (void)PlayTouchSound;
 
 // Public methods
 + (CGPoint)scaledCGPoint:(CGPoint)point;
