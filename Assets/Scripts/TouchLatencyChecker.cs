@@ -3,6 +3,10 @@ using System;
 using System.Runtime.InteropServices;
 using AOT;
 using UnityEngine.InputSystem;
+using E7.Native;
+using System.Collections;
+using FMODUnity;
+using System.Collections.Generic;
 
 public class TouchLatencyChecker : MonoBehaviour
 {
@@ -53,7 +57,10 @@ public class TouchLatencyChecker : MonoBehaviour
         _PrintIOSTimeStamp(NativeTimestampCallback);
 
         _StartNativeTouch(NativeTouchCallback);
-    }
+
+          //Audio Code
+          LoadIOSAudio();
+     }
 
     private void OnDestroy()
     {
@@ -90,4 +97,51 @@ public class TouchLatencyChecker : MonoBehaviour
         return DateTime.Now.Subtract(DateTime.MinValue.AddYears(1969)).TotalMilliseconds - 20700000.0d;
     }
 
+     private NativeAudioPointer stringNativeAudioPointer;
+     public IEnumerator LoadIOSAudio()
+     {
+          if (NativeAudio.OnSupportedPlatform == false) yield break;
+          NativeAudio.Dispose();
+          var option = NativeAudio.InitializationOptions.defaultOptions;
+
+          option.androidAudioTrackCount = 6 * 2;
+
+          //The dispose above followed by this initialize could cause problem on some phones.
+          //You will get non-fast track if you previously holding too many fast ones, because
+          //it need more time to make the fast track available again after release. The easiest
+          //way to reproduce is to press Next Scene until it came back to this scene again.
+
+          //So! This little wait will help that.
+
+          yield return new WaitForSeconds(0.5f);
+
+          NativeAudio.Initialize(option);
+          stringNativeAudioPointer=NativeAudio.Load("A1.wav");
+     }
+     public void PlayStringChannelIOS(int channelIndex)
+     {
+          if (NativeAudio.Initialized == false) return;
+
+          NativeAudio.GetNativeSource(channelIndex).Play(stringNativeAudioPointer);
+     }
+     public void SetVolumeStringChannelIOS(int channelIndex, float volume01)
+     {
+          if (NativeAudio.Initialized == false) return;
+
+          NativeAudio.GetNativeSource(channelIndex).SetVolume(volume01);
+     }
+
+     public void StopStringChannelIOS(int channelIndex)
+     {
+          if (NativeAudio.Initialized == false) return;
+
+          NativeAudio.GetNativeSource(channelIndex).Stop();
+     }
+
+     public void SetPitchStringChannelIOS(int channelIndex, float pitch)
+     {
+          if (NativeAudio.Initialized == false) return;
+
+          NativeAudio.GetNativeSource(channelIndex).SetPitch(pitch);
+     }
 }

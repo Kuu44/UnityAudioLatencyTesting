@@ -251,6 +251,9 @@ static NativeAudioBufferIdPair* nabips;
     return loadedIndex;
 }
 
+
+
+
 //Can call from Unity to give Unity-loaded AudioClip!!
 + (int) SendByteArray:(char*) audioData audioSize:(int)audioSize channels:(int)channel samplingRate:(int)samplingRate resamplingQuality:(int)resamplingQuality
 {
@@ -511,6 +514,15 @@ static ALuint sourceCycleIndex = 0;
     alSourcef(nasips[nativeSourceIndex].right, AL_GAIN, volume);
 }
 
+
+//ROB AND TIDDY'S MODIFICATION #SWIFT FOR SETTING PITCH
++ (void) SetPitch: (float) pitchFactor OnNativeSourceIndex:(int) nativeSourceIndex
+{
+    alSourcef(nasips[nativeSourceIndex].left, AL_PITCH, pitchFactor);
+    alSourcef(nasips[nativeSourceIndex].right, AL_PITCH, pitchFactor);
+
+}
+
 //With OpenAL's 3D design, to achieve 2D panning we have deinterleaved the stereo file
 //into 2 separated mono sources positioned left and right of the listener. This achieve the same stereo effect.
 //Gain is already used in SetVolume, we will use a linear attenuation for panning.
@@ -735,6 +747,10 @@ extern "C" {
     
     void _SetVolume(int nativeSourceIndex, float volume){
         [NativeAudio SetVolume:volume OnNativeSourceIndex:nativeSourceIndex];
+    }
+
+    void _SetPitch(int nativeSourceIndex, float pitchFactor){
+        [NativeAudio SetPitch:pitchFactor OnNativeSourceIndex:nativeSourceIndex];
     }
     
     void _SetPan(int nativeSourceIndex, float pan){

@@ -46,6 +46,7 @@ typedef struct
 + (void)StopAudio:(int)nativeSourceIndex;
 
 + (void)SetVolume:(float)volume OnNativeSourceIndex:(int)nativeSourceIndex;
++ (void)SetPitch:(float)pitchFactor OnNativeSourceIndex:(int)nativeSourceIndex;
 + (void)SetPan:(float)pan OnNativeSourceIndex:(int)nativeSourceIndex;
 
 + (void)GetDeviceAudioInformation: (double*)interopArray OutputDeviceEnumArray:(int*) outputDeviceEnumArray;

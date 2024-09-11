@@ -81,22 +81,32 @@ namespace E7.Native
 #endif
         }
 
-        /// <summary>
-        /// This pan is based on "balance effect" and not a "constant energy pan". That is
-        /// at the center you hear each side fully. (Constant energy pan has 3dB attenuation to both on center.)
-        /// </summary>
-        /// <remarks>
-        /// [iOS] 2D panning in iOS will be emulated in OpenAL's 3D audio engine by splitting your stereo sound into a separated mono sounds, 
-        /// then position each one on left and right ear of the listener. When panning, instead of adjusting gain we will just move the source 
-        /// further from the listener and the distance attenuation will do the work. (Gain is reserved to the setting volume command, 
-        /// so we have 2 stage of gain adjustment this way.
-        /// 
-        /// [Android] Maps to SLVolumeItf interface -> SetStereoPosition
-        /// </remarks>
-        /// <param name="pan">
-        /// -1 for full left, 0 for center, 1 for full right. 
-        /// </param>
-        public void SetPan(float pan)
+          public void SetPitch(float pitchFactor)
+          {
+               AssertInitialized();
+#if UNITY_IOS
+            NativeAudio._SetPitch(Index, pitchFactor);
+#elif UNITY_ANDROID
+               //TOUGH LUCK BRO
+#endif
+          }
+
+          /// <summary>
+          /// This pan is based on "balance effect" and not a "constant energy pan". That is
+          /// at the center you hear each side fully. (Constant energy pan has 3dB attenuation to both on center.)
+          /// </summary>
+          /// <remarks>
+          /// [iOS] 2D panning in iOS will be emulated in OpenAL's 3D audio engine by splitting your stereo sound into a separated mono sounds, 
+          /// then position each one on left and right ear of the listener. When panning, instead of adjusting gain we will just move the source 
+          /// further from the listener and the distance attenuation will do the work. (Gain is reserved to the setting volume command, 
+          /// so we have 2 stage of gain adjustment this way.
+          /// 
+          /// [Android] Maps to SLVolumeItf interface -> SetStereoPosition
+          /// </remarks>
+          /// <param name="pan">
+          /// -1 for full left, 0 for center, 1 for full right. 
+          /// </param>
+          public void SetPan(float pan)
         {
             AssertInitialized();
 #if UNITY_IOS
