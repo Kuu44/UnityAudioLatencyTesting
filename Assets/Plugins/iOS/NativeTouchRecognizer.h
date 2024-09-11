@@ -18,7 +18,7 @@ typedef void (*NativeTimestampDelegate)(const char* timestamp);
 + (void)PrintIOSTimeStamp;
 
 //Audio methods
-+ (void)PlayTouchSound;
+// + (void)PlayTouchSound;
 
 // Public methods
 + (CGPoint)scaledCGPoint:(CGPoint)point;
