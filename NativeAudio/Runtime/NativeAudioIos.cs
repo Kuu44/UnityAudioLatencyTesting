@@ -48,6 +48,8 @@ namespace E7.Native
         internal static extern void _SetVolume(int nativeSourceIndex, float volume);
 
         [DllImport("__Internal")]
+        internal static extern void _SetPitch(int nativeSourceIndex, float pitchFactor);
+        [DllImport("__Internal")]
         internal static extern void _SetPan(int nativeSourceIndex, float pan);
 
         [DllImport("__Internal")]

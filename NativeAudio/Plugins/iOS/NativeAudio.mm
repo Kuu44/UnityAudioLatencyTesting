@@ -6,7 +6,7 @@
 
 #import "NativeAudio.h"
 
-//#define LOG_NATIVE_AUDIO
+#define LOG_NATIVE_AUDIO
 
 @implementation NativeAudio
 
@@ -412,7 +412,7 @@ static NativeAudioBufferIdPair* nabips;
     nabips[runningBufferAllocationNumber - 1] = nabip;
     
 #ifdef LOG_NATIVE_AUDIO
-    NSLog(@"Loaded OpenAL sound: %@ bufferId: L %d R %d size: %u",[NSString stringWithUTF8String:soundUrl], bufferIdL, bufferIdR, (unsigned int)audioSize);
+    NSLog(@"Loaded OpenAL sound through AudioClip bufferId: L %d R %d size: %u", bufferIdL, bufferIdR, (unsigned int)audioSize);
 #endif
     
     return runningBufferAllocationNumber - 1;
