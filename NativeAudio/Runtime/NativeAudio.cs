@@ -357,19 +357,19 @@ namespace E7.Native
 
         private static void AssertAudioClip(AudioClip audioClip)
         {
-            if(audioClip.loadType != AudioClipLoadType.DecompressOnLoad)
+            if (audioClip.loadType != AudioClipLoadType.DecompressOnLoad)
             {
                 throw new NotSupportedException(string.Format("Your audio clip {0} load type is not Decompress On Load but {1}. Native Audio needs to read the raw PCM data by that import mode.", audioClip.name, audioClip.loadType));
             }
-            if(audioClip.channels != 1 && audioClip.channels != 2)
+            if (audioClip.channels != 1 && audioClip.channels != 2)
             {
                 throw new NotSupportedException(string.Format("Native Audio only supports mono or stereo. Your audio {0} has {1} channels", audioClip.name, audioClip.channels));
             }
-            if(audioClip.ambisonic)
+            if (audioClip.ambisonic)
             {
                 throw new NotSupportedException("Native Audio does not support ambisonic audio!");
             }
-            if(audioClip.loadState != AudioDataLoadState.Loaded && audioClip.loadInBackground)
+            if (audioClip.loadState != AudioDataLoadState.Loaded && audioClip.loadInBackground)
             {
                 throw new InvalidOperationException("Your audio is not loaded yet while having the import settings Load In Background. Native Audio cannot wait for loading asynchronously for you and it would results in an empty audio. To keep Load In Background import settings, call `audioClip.LoadAudioData()` beforehand and ensure that `audioClip.loadState` is `AudioDataLoadState.Loaded` before calling `NativeAudio.Load`, or remove Load In Background then Native Audio could load it for you.");
             }
@@ -390,7 +390,7 @@ namespace E7.Native
 
             //Convert to 16-bit PCM
             short[] shortArray = new short[audioClip.samples * audioClip.channels];
-            for(int i = 0; i < shortArray.Length; i++)
+            for (int i = 0; i < shortArray.Length; i++)
             {
                 shortArray[i] = (short)(data[i] * short.MaxValue);
             }

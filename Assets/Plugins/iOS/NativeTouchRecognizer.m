@@ -14,46 +14,24 @@ static double appStartTime; // Static variable to store the app start time
 // static int audioBufferIndex = -1;
 // static int audioSourceIndex = -1;
 
-typedef void (*NativeTouchDelegate)(int x, int y, double elapsedTime, int state);
+// typedef void (*NativeTouchesDelegate)(int x, int y, double elapsedTime, int state);
+typedef void (*NativeTouchesDelegate)(const char* touchDataJson);
 typedef void (*NativeTimestampDelegate)(const char* timestamp);
 
-NativeTouchDelegate callback;
+NativeTouchesDelegate callback;
 NativeTimestampDelegate timestampCallback;
 
-// Declare the NativeAudio functions (C-Linkage) here
-
-// extern int _Initialize();
-// extern int _LoadAudio(char* soundUrl, int resamplingQuality);
-// extern void _PrepareAudio(int bufferIndex, int nativeSourceIndex);
-// extern void _PlayAudioWithNativeSourceIndex(int nativeSourceIndex, NativeAudioPlayAdjustment playAdjustment);
-// extern int _GetNativeSource(int index);
-
+// Mapping between UITouch and touch IDs
+static NSMutableDictionary<UITouch*, NSNumber*> *touchIdMapping;
+static int nextTouchId = 0;
 
 + (void)initialize {
     if (self == [NativeTouchRecognizer class]) {
         // Record the app start time when the class is initialized
         appStartTime = [NativeTouchRecognizer GetCurrentTimeInMilliseconds];
 
-
-        NSLog(@"[Native] App Start Time recorded: %f", [NativeTouchRecognizer GetCurrentTimeInMilliseconds]);
+        NSLog(@"[Native] App Start Time recorded: %f", appStartTime);
         // [NativeTouchRecognizer PrintIOSTimeStamp];
-        
-        //Initialise Sound
-        // _Initialize();//OpenAL and NativeAudio
-
-        //Load audio buffer and get index
-        // char *soundFile = "A1.wav";
-        // audioBufferIndex = _LoadAudio(soundFile, 0);
-
-        // if(audioBufferIndex != -1){
-            //get a source for playback
-            // audioSourceIndex = _GetNativeSource(-1); //gets a round robin audio source 
-        // }
-
-        // if(audioSourceIndex != -1){
-            //prepare the buffer to the source
-            // _PrepareAudio(audioBufferIndex, audioSourceIndex);
-        // }
     }
 }
 
@@ -65,33 +43,13 @@ NativeTimestampDelegate timestampCallback;
     }
     return gestureRecognizer;
 }
-// + (void)PlayTouchSound {
-//     NSLog(@"[Native] Started Playing touch sound at %@", [NativeTouchRecognizer GetCurrentDateTimeAsString]);
-    
-//     if(audioSourceIndex != -1){
-//         NativeAudioPlayAdjustment playAdjustment;
-//         playAdjustment.volume = 1.0f;
-//         playAdjustment.pan = 0.0f; // Set pan (0 is center, -1 if left, 1 is right)
-//         playAdjustment.offsetSeconds = 0.0f; // Start at the beginnning of the sound
-//         playAdjustment.trackLoop = false;
-        
-//         //Play the prepared sound
-//         _PlayAudioWithNativeSourceIndex(audioSourceIndex, playAdjustment);
-        
-//         // if (audioPlayer) {
-//         //     [audioPlayer play];
-        
-//         NSLog(@"[Native] begun Playing touch sound at %@", [NativeTouchRecognizer GetCurrentDateTimeAsString]);
-//         // }
-//     }
-// }
 
 + (void)StopNativeTouch
 {
     [unityView removeGestureRecognizer:gestureRecognizer];
 }
 
-+ (void)StartNativeTouchWithCallback:(NativeTouchDelegate)nativeTouchDelegate
++ (void)StartNativeTouchWithCallback:(NativeTouchesDelegate)nativeTouchDelegate
 {
     callback = nativeTouchDelegate;
     
@@ -110,24 +68,6 @@ NativeTimestampDelegate timestampCallback;
 {
     return CGPointMake(point.x * screenScale, (screenSize.size.height - point.y) * screenScale);
 }
-
-// +(NSString *)elapsedTimeSinceAppStart
-// {
-//     // Calculate the timestamp since the app started
-//     double currentTime = [NativeTouchRecognizer GetCurrentTimeInMilliseconds];
-//     double elapsedTime = currentTime - appStartTime;
-
-//     // Calculate hours, minutes, seconds, and milliseconds
-//     int hours = (int)(elapsedTime / 3600);
-//     int minutes = ((int)(elapsedTime / 60)) % 60;
-//     int seconds = (int)elapsedTime % 60;
-//     int milliseconds = (int)((elapsedTime - floor(elapsedTime)) * 1000);
-
-//     // Format the string with the elapsed time
-//     NSString *elapsedTimeString = [NSString stringWithFormat:@"| Time: %02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds];
-
-//     return elapsedTimeString;
-// }
 
 +(void)PrintIOSTimeStampWithCallback:(NativeTimestampDelegate)nativeTimestampDelegate
 {
@@ -158,21 +98,52 @@ NativeTimestampDelegate timestampCallback;
 }
 +(void)sendTouchesToUnity:(NSSet<UITouch*> *)touches
 {
-    NSArray<UITouch *>* touchesArray = [touches allObjects];
-    for (UITouch* touch in touchesArray)
+    NSMutableArray *touchesDataArray = [NSMutableArray array];
+
+    for (UITouch* touch in touches)
     {
-        // Get the touch phase directly from the UITouch object
-        UITouchPhase phase = touch.phase;
+         // Assign a unique touch ID if necessary
+        NSNumber *touchId = touchIdMapping[touch];
+        if (touchId == nil)
+        {
+            touchId = @(nextTouchId++);
+            touchIdMapping[touch] = touchId;
+        }
 
         CGPoint location = [NativeTouchRecognizer scaledCGPoint:[touch locationInView:nil]];
         double iosTimestampMS = [NativeTouchRecognizer GetCurrentTimeInMilliseconds];
+        int phase = (int)touch.phase;
 
-        NSLog(@"[Native] Touch at position: (%.2f, %.2f) | Phase: %ld | Time: %@",
-              location.x, location.y, (long)phase, [NativeTouchRecognizer GetCurrentDateTimeAsString]);
+        NSDictionary *touchData = @{
+            @"id": touchId,
+            @"x": @(location.x),
+            @"y": @(location.y),
+            @"timestamp": @(iosTimestampMS),
+            @"phase": @(phase)
+        };
 
-        if (callback != nil) {
-            callback((int)location.x, (int)location.y, iosTimestampMS, (int)phase);
-        }
+        [touchesDataArray addObject:touchData];
+        
+         NSLog(@"[Native] Touch ID: %@ at position: (%.2f, %.2f) | Phase: %ld | Time: %@",
+              touchId, location.x, location.y, (long)touch.phase, [NativeTouchRecognizer GetCurrentDateTimeAsString]);
+
+        // if (callback != nil) {
+        //     callback((int)location.x, (int)location.y, iosTimestampMS, (int)phase);
+        // }
+    }
+
+     // Convert the touchesDataArray to JSON string
+    NSError *error;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:touchesDataArray options:0 error:&error];
+    if (!jsonData) {
+        NSLog(@"[Native] Error serializing touch data to JSON: %@", error);
+        return;
+    }
+    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+    // Send the JSON string to Unity
+    if (callback != nil) {
+        callback([jsonString UTF8String]);
     }
 }
 
@@ -188,6 +159,12 @@ NativeTimestampDelegate timestampCallback;
 -(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     [NativeTouchRecognizer sendTouchesToUnity:touches];
+
+    // Remove touch IDs for ended touches
+    for (UITouch *touch in touches)
+    {
+        [touchIdMapping removeObjectForKey:touch];
+    }
 }
 
 -(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
@@ -195,6 +172,16 @@ NativeTimestampDelegate timestampCallback;
     [NativeTouchRecognizer sendTouchesToUnity:touches];
 }
 
+-(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    [NativeTouchRecognizer sendTouchesToUnity:touches];
+
+    // Remove touch IDs for cancelled touches
+    for (UITouch *touch in touches)
+    {
+        [touchIdMapping removeObjectForKey:touch];
+    }
+}
 @end
 
 extern void _StopNativeTouch()
@@ -202,7 +189,7 @@ extern void _StopNativeTouch()
     [NativeTouchRecognizer StopNativeTouch];
 }
 
-extern void _StartNativeTouch(NativeTouchDelegate nativeTouchDelegate)
+extern void _StartNativeTouch(NativeTouchesDelegate nativeTouchDelegate)
 {
     [NativeTouchRecognizer StartNativeTouchWithCallback:nativeTouchDelegate];
 }

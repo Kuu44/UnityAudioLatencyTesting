@@ -10,7 +10,11 @@ using System.Linq;
 
 public class TouchLatencyChecker : MonoBehaviour
 {
-    //Touch Code
+    private double touchTimestamp;
+    private Vector2 touchPosition;
+
+    //iOS Touch Code
+#if UNITY_IOS
     [DllImport("__Internal")]
     private static extern void _StartNativeTouch(NativeTouchDelegate callback);
 
@@ -19,10 +23,6 @@ public class TouchLatencyChecker : MonoBehaviour
 
     public delegate void NativeTouchDelegate(int x, int y, double iosTimeInMilliseconds, int state);
 
-    private static TouchLatencyChecker instance;
-    private double iosTouchTimestamp;
-    private Vector2 iosTouchPosition;
-
     [MonoPInvokeCallback(typeof(NativeTouchDelegate))]
     public static void NativeTouchCallback(int x, int y, double iosTimeInMilliseconds, int state)
     {
@@ -30,11 +30,11 @@ public class TouchLatencyChecker : MonoBehaviour
         Debug.Log($"[Unity - Native Callback] Called playTone() from NativeTouchCallback | Time: {instance.GetCurrentDateTimeAsString()}");
         instance.playTone();
         //Update the touch position and timestamp with value passed from iOS
-        instance.iosTouchTimestamp = iosTimeInMilliseconds;
-        instance.iosTouchPosition = new Vector2(x, y);
+        instance.touchTimestamp = iosTimeInMilliseconds;
+        instance.touchPosition = new Vector2(x, y);
 
         double unityTimestamp = instance.GetCurrentTimeInMilliseconds();
-        double touchLatencyMs = unityTimestamp - instance.iosTouchTimestamp;
+        double touchLatencyMs = unityTimestamp - instance.touchTimestamp;
         Debug.Log($"[Unity - Native Callback] Touch Latency: {touchLatencyMs:F3} ms | Phase {state} | Time: {instance.GetCurrentDateTimeAsString()}");
     }
 
@@ -49,8 +49,71 @@ public class TouchLatencyChecker : MonoBehaviour
         Debug.Log($"[Unity - Native Callback] Received iOS Time Stamp: {timestamp}");
         Debug.Log($"[Unity - Native Callback] Unity TimeStamp: {instance.GetCurrentDateTimeAsString()}");
     }
+#elif UNITY_ANDROID
+     // Declare the delegate for the touch callback
+     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+     public delegate void NativeTouchDelegate(int x, int y, double timestamp, int phase);
 
+     // Keep a reference to the delegate to prevent it from being garbage collected
+     private static NativeTouchDelegate nativeTouchCallbackDelegate;
 
+     // This method will be called from the native code
+     [AOT.MonoPInvokeCallback(typeof(NativeTouchDelegate))]
+     private static void NativeTouchCallback(int x, int y, double timestamp, int phase)
+     {
+          //Start playing tone
+          Debug.Log($"[Unity - Native Callback] Called playTone() from NativeTouchCallback | Time: {instance.GetCurrentDateTimeAsString()}");
+          instance.playTone();
+
+          //Update the touch position and timestamp with value passed from Native
+          instance.touchTimestamp = timestamp;
+          instance.touchPosition = new Vector2(x, y);
+
+          double unityTimestamp = instance.GetCurrentTimeInMilliseconds();
+          double touchLatencyMs = unityTimestamp - instance.touchTimestamp;
+          Debug.Log($"[Unity - Native Callback] Touch Latency: {touchLatencyMs:F3} ms | Phase {phase} | Time: {instance.GetCurrentDateTimeAsString()}");
+     }
+
+     // The function pointer to the delegate
+     private static IntPtr nativeTouchCallbackPointer;
+
+     // Native methods to register the callback
+     [DllImport("NativeTouchPlugin")]
+     private static extern void nativeRegisterTouchCallback(IntPtr callback);
+
+     [DllImport("NativeTouchPlugin")]
+     private static extern void nativeStartTouch();
+
+     [DllImport("NativeTouchPlugin")]
+     private static extern void nativeStopTouch();
+
+     private AndroidJavaClass nativeTouchRecognizer;
+
+     // Method called from Java via UnitySendMessage (UNUSED)
+     //public void NativeTouchCallback(string message)
+     //{
+     //     // Parse the message received from Java
+     //     string[] parts = message.Split(',');
+     //     if (parts.Length == 4)
+     //     {
+     //          int x = int.Parse(parts[0]);
+     //          int y = int.Parse(parts[1]);
+     //          double timestamp = double.Parse(parts[2]);
+     //          int phase = int.Parse(parts[3]);
+
+     //          Debug.Log($"[Unity - Native Callback] Touch at position: ({x}, {y}) | Phase: {phase} | Time: {GetCurrentDateTimeAsString()}");
+
+     //          // Handle touch event (e.g., play tone)
+     //          playTone();
+     //     }
+     //     else
+     //     {
+     //          Debug.LogError("Invalid message received from NativeTouchRecognizer: " + message);
+     //     }
+     //}
+#endif
+
+    private static TouchLatencyChecker instance;
     //Audio Code
     int[] channelIds; // 2 per string for AndriodNativeAudio in andriod devices and AndriodNativeAudio in adriod devices.
     public int channelIndex = 0; // which audio source to play rn (LRU: least recently used)
@@ -78,11 +141,30 @@ public class TouchLatencyChecker : MonoBehaviour
 
         Debug.Log($"[Unity] TouchLatencyChecker: Start | TimeStamp: {instance.GetCurrentDateTimeAsString()}");
 
+        // Set the GameObject name so UnitySendMessage can find it
+        this.gameObject.name = "TouchLatencyChecker";
+
+#if UNITY_IOS
         // Call the iOS function to print its timestamp
         _PrintIOSTimeStamp(NativeTimestampCallback);
 
         _StartNativeTouch(NativeTouchCallback);
+#elif UNITY_ANDROID
+          // Initialize the delegate
+          nativeTouchCallbackDelegate = NativeTouchCallback;
 
+          // Get the function pointer
+          nativeTouchCallbackPointer = Marshal.GetFunctionPointerForDelegate(nativeTouchCallbackDelegate);
+
+          // Register the callback with the native plugin
+          nativeRegisterTouchCallback(nativeTouchCallbackPointer);
+          Debug.Log($"[Unity] Registering touch callback with native plugin at {instance.GetCurrentDateTimeAsString()}");
+
+          Debug.Log($"[Unity] Calling StartNativeTouch in Java at {instance.GetCurrentDateTimeAsString()}");
+          // Call the Java method to start touch detection
+          nativeTouchRecognizer = new AndroidJavaClass("com.swiftgamedev.nativetouch.NativeTouchRecognizer");
+          nativeTouchRecognizer.CallStatic("StartNativeTouch");
+#endif
         // Please ensure the length of sources is equal to no of channels
         int channelCount = 2;
         fadeVolumes = new float[channelCount];  // to track channel volume when fading
@@ -109,29 +191,44 @@ public class TouchLatencyChecker : MonoBehaviour
     private void OnDestroy()
     {
         Debug.Log("TouchLatencyChecker: OnDestroy");
+#if UNITY_IOS
         _StopNativeTouch();
+#elif UNITY_ANDROID
+          if (nativeTouchRecognizer != null)
+          {
+               nativeTouchRecognizer.CallStatic("StopNativeTouch");
+          }
+#endif
         NativeAudio.Dispose();
     }
 
     private void Update()
     {
-        //   foreach (var touch in Touchscreen.current.touches)
-        //   {
-        //        if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
-        //        {
-        //             double unityEventTimestamp = GetCurrentTimeInMilliseconds();
-        //             Vector2 unityTouchPosition = Touchscreen.current.primaryTouch.position.ReadValue();
+        foreach (var touch in Touchscreen.current.touches)
+        {
+            if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
+            {
+                double unityEventTimestamp = GetCurrentTimeInMilliseconds();
 
-        //             // Log the Unity timestamp in hh:mm:ss.mmm format
-        //             Debug.Log($"[Unity InputSystem] Unity Touch Timestamp: {instance.GetCurrentDateTimeAsString()} with Phase: {Touchscreen.current.primaryTouch.phase.ReadValue()}");
 
-        //             double touchLatencyMs = unityEventTimestamp - iosTouchTimestamp;
-        //             Vector2 positionDifference = unityTouchPosition - iosTouchPosition;
+                Vector2 unityTouchPosition = Touchscreen.current.primaryTouch.position.ReadValue();
 
-        //             Debug.Log($"[Unity InputSystem] Touch Latency: {touchLatencyMs:F3} ms");
-        //             Debug.Log($"[Unity InputSystem] iOS Touch Position: {iosTouchPosition}, Unity Touch Position: {unityTouchPosition}, Difference: {positionDifference}, Frame Number: {Time.frameCount}");
-        //        }
-        //   }
+                // Log the Unity timestamp in hh:mm:ss.mmm format
+                Debug.Log($"[Unity InputSystem] Unity Touch Timestamp: {instance.GetCurrentDateTimeAsString()} with Phase: {Touchscreen.current.primaryTouch.phase.ReadValue()}");
+
+                double touchLatencyMs = unityEventTimestamp - touchTimestamp;
+                Vector2 positionDifference = unityTouchPosition - touchPosition;
+
+                Debug.Log($"[Unity InputSystem] Touch Latency: {touchLatencyMs:F3} ms");
+                Debug.Log($"[Unity InputSystem] iOS Touch Position: {touchPosition}, Unity Touch Position: {unityTouchPosition}, Difference: {positionDifference}, Frame Number: {Time.frameCount}");
+            }
+        }
+    }
+    private void OnDisable()
+    {
+#if UNITY_ANDROID
+                nativeTouchCallbackDelegate = null;
+#endif
     }
     private string GetCurrentDateTimeAsString()
     {
@@ -139,7 +236,8 @@ public class TouchLatencyChecker : MonoBehaviour
     }
     private double GetCurrentTimeInMilliseconds()
     {
-        return DateTime.Now.Subtract(DateTime.MinValue.AddYears(1969)).TotalMilliseconds - 20700000.0d;
+        return DateTime.Now.Subtract(DateTime.MinValue.AddYears(1969)).TotalMilliseconds;
+        //return DateTime.Now.Subtract(DateTime.MinValue.AddYears(1969)).TotalMilliseconds - 20700000.0d;
     }
 
     private NativeAudioPointer stringNativeAudioPointer;
