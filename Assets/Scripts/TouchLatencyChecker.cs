@@ -13,7 +13,9 @@ public class TouchLatencyChecker : MonoBehaviour
     private double touchTimestamp;
     private Vector2 touchPosition;
 
-    //iOS Touch Code
+    private static TouchLatencyChecker instance;
+
+     //iOS Touch Code
 #if UNITY_IOS
     [DllImport("__Internal")]
     private static extern void _StartNativeTouch(NativeTouchDelegate callback);
@@ -113,7 +115,6 @@ public class TouchLatencyChecker : MonoBehaviour
      //}
 #endif
 
-    private static TouchLatencyChecker instance;
     //Audio Code
     int[] channelIds; // 2 per string for AndriodNativeAudio in andriod devices and AndriodNativeAudio in adriod devices.
     public int channelIndex = 0; // which audio source to play rn (LRU: least recently used)
