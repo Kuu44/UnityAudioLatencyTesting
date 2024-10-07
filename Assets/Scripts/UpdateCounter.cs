@@ -123,7 +123,7 @@ public class UpdateCounter : MonoBehaviour
           // PrintCurrentTimeStamp("Touched on:");
           isTouching = true;
           touchPosition = context.ReadValue<Vector2>();
-          Debug.Log($"[Update Counter]: Touching at: {touchPosition} | Phase: {context.phase} | Time:{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}");
+          //Debug.Log($"[Update Counter]: Touching at: {touchPosition} | Phase: {context.phase} | Time:{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}");
 
      }
 
@@ -134,22 +134,22 @@ public class UpdateCounter : MonoBehaviour
    
      private void OnInputEvent(InputEventPtr eventPtr, InputDevice device)
      {
-          if (device is Touchscreen)
-          {
-               if (eventPtr.IsA<StateEvent>() || eventPtr.IsA<DeltaStateEvent>())
-               {
-                    // Get the timestamp of the input event
-                    double inputEventTimestamp = eventPtr.time;
+          //if (device is Touchscreen)
+          //{
+          //     if (eventPtr.IsA<StateEvent>() || eventPtr.IsA<DeltaStateEvent>())
+          //     {
+          //          // Get the timestamp of the input event
+          //          double inputEventTimestamp = eventPtr.time;
 
-                    // Get the current time since startup
-                    float currentTime = Time.realtimeSinceStartup;
+          //          // Get the current time since startup
+          //          float currentTime = Time.realtimeSinceStartup;
 
-                    // Calculate the lag in milliseconds
-                    double inputLagMs = (currentTime - inputEventTimestamp) * 1000.0;
+          //          // Calculate the lag in milliseconds
+          //          double inputLagMs = (currentTime - inputEventTimestamp) * 1000.0;
 
-                    Debug.Log($"Input Lag: {inputLagMs} ms");
-               }
-          }
+          //          Debug.Log($"Input Lag: {inputLagMs} ms");
+          //     }
+          //}
      }
 
      void Update()
