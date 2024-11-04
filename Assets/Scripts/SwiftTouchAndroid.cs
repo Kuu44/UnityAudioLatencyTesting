@@ -1,8 +1,8 @@
 
 using UnityEngine;
-using System.Runtime.InteropServices;
-using AOT;
 using System;
+using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace SwiftGameDev.Touch
 {
@@ -47,36 +47,65 @@ namespace SwiftGameDev.Touch
           //     OnTouchReceived?.Invoke();
           //}
           // Callback method to receive touch events from the custom activity
-          public static void NativeTouchCallback(string message)
+          public static void NativeTouchCallback(string touchDataJson)
           {
-               // Parse the message
-               string[] parts = message.Split(',');
-               if (parts.Length != 4)
+               if (string.IsNullOrEmpty(touchDataJson))
                {
-                    Debug.LogError("[Unity] Invalid touch data received");
+                    Debug.LogError("[Unity - Native Callback] Received empty touch data JSON");
                     return;
                }
 
-               int x = int.Parse(parts[0]);
-               int y = int.Parse(parts[1]);
-               long timestamp = long.Parse(parts[2]);
-               int phase = int.Parse(parts[3]);
+               try
+               {
+                    var wrapper = JObject.Parse(touchDataJson);
+                    var touchesArray = wrapper["touches"] as JArray;
+                    List<TouchData> touches = new List<TouchData>();
 
-               // Convert timestamp to milliseconds
-               touchTimestamp = timestamp / 1.0; // If timestamp is already in milliseconds
+                    foreach (var touchObj in touchesArray)
+                    {
+                         int fingerId = touchObj["fingerId"].Value<int>();
+                         float x = touchObj["x"].Value<float>();
+                         float y = touchObj["y"].Value<float>();
+                         double timestamp = touchObj["timestamp"].Value<double>();
+                         int phaseInt = touchObj["phase"].Value<int>();
 
-               // Update the touch position and timestamp
-               touchPosition = new Vector2(x, y);
+                         TouchData touchData = new TouchData
+                         {
+                              fingerId = fingerId,
+                              position = new Vector2(x, y),
+                              timestamp = timestamp,
+                              phase = ConvertPhase(phaseInt)
+                         };
 
-               double unityTimestamp = GetCurrentTimeInMilliseconds();
-               double touchLatencyMs = unityTimestamp - touchTimestamp;
+                         Debug.Log($"[Unity - Native Callback] Touch Data: ID: {touchData.fingerId} | Pos: {touchData.position} | Time:{GetCurrentDateTimeAsString()} | Phase: {touchData.phase}");
+                         touches.Add(touchData);
+                    }
 
-               Debug.Log($"[Unity - Native Callback] Touch Latency: {touchLatencyMs:F3} ms | Phase {phase} | Time: {GetCurrentDateTimeAsString()}");
+                    // Update the public touches array
+                    CurrentTouches = touches.ToArray();
 
-               // Invoke the action
-               OnTouchesReceived?.Invoke(CurrentTouches);
+                    // Invoke the action
+                    OnTouchesReceived?.Invoke();
+
+               }
+               catch (Exception ex)
+               {
+                    Debug.LogError($"[Unity - Native Callback] Error parsing touch data JSON: {ex.Message}");
+               }
           }
-
+          // Convert Android touch phase to UnityEngine.TouchPhase
+          private static TouchPhase ConvertPhase(int phase)
+          {
+               switch (phase)
+               {
+                    case 0: return TouchPhase.Began;
+                    case 1: return TouchPhase.Moved;
+                    case 2: return TouchPhase.Stationary;
+                    case 3: return TouchPhase.Ended;
+                    case 4: return TouchPhase.Canceled;
+                    default: return TouchPhase.Canceled;
+               }
+          }
           public static void StartAndroid()
           {
                //nativeTouchCallbackDelegate = NativeTouchCallback;

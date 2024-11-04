@@ -55,7 +55,7 @@ namespace SwiftGameDev.Touch
                 CurrentTouches = touches.ToArray();
 
                 // Invoke the action
-                OnTouchesReceived?.Invoke(CurrentTouches);
+                OnTouchesReceived?.Invoke();
             }
             catch (Exception ex)
             {

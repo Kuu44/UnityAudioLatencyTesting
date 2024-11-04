@@ -27,8 +27,14 @@ public class TouchAudioHandler : MonoBehaviour
 
     bool noteInProgress = false;
 
-    private void Awake()
+#if UNITY_ANDROID
+     int FileID, SoundID;
+#endif
+
+     private void Awake()
     {
+        this.gameObject.name = "TouchAudioHandler";
+
         // Set up the SwiftTouch class
         SwiftTouch.Start();
 
@@ -57,11 +63,15 @@ public class TouchAudioHandler : MonoBehaviour
         baseVolume = 1.0f;
 
         StartCoroutine(LoadIOSAudio());
+#elif UNITY_ANDROID
+
+          LoadAndroidAudio();
 #endif
-    }
+     }
 
     private void OnDestroy()
     {
+          UnloadAndroidAudio();
         // Unsubscribe from the OnTouchReceived action
         SwiftTouch.OnTouchesReceived -= HandleTouchReceived;
 
@@ -75,17 +85,32 @@ public class TouchAudioHandler : MonoBehaviour
         // SwiftTouch.TestOldInputSystem();
     }
 
+     public void AndroidTouchCallback(string touchDataJson)
+     {
+          SwiftTouch.NativeTouchCallback(touchDataJson);
+     }
     // Example method subscribed to the OnTouchReceived action, will be called whenever a touch is received
-    private void HandleTouchReceived(SwiftTouch.TouchData[] touches)
+    private void HandleTouchReceived()
     {
-        foreach (var touch in touches)
-        {
-            Debug.Log($"[Unity] Touch Received: ID: {touch.fingerId} | Pos: {touch.position} | Time: {SwiftTouch.GetCurrentDateTimeAsString()} | Phase: {touch.phase}");
-            if (touch.phase == UnityEngine.TouchPhase.Began)
-            {
-                playTone();
-            }
-        }
+          if (SwiftTouch.CurrentTouches!= null)
+          {
+               foreach (var touch in SwiftTouch.CurrentTouches)
+               {
+                    Debug.Log($"[Unity] Touch Received: ID: {touch.fingerId} | Pos: {touch.position} | Time: {SwiftTouch.GetCurrentDateTimeAsString()} | Phase: {touch.phase}");
+                    if (touch.phase == UnityEngine.TouchPhase.Began)
+                    {
+                         playTone();
+                    }
+                    else if (touch.phase == TouchPhase.Moved)
+                    {
+                         // Handle touch moved
+                    }
+                    else if (touch.phase == TouchPhase.Ended)
+                    {
+                         // Handle touch ended
+                    }
+               } 
+          }
     }
 
     private NativeAudioPointer stringNativeAudioPointer;
@@ -116,7 +141,19 @@ public class TouchAudioHandler : MonoBehaviour
 
         Debug.Log($"[Unity - LoadIOSAudio] Loaded audio file: A1.wav at pointer: {stringNativeAudioPointer}");
     }
-    public void PlayStringChannelIOS(int channelIndex)
+
+     public void LoadAndroidAudio()
+     {
+          AndroidNativeAudio.makePool();
+
+          FileID = AndroidNativeAudio.load("A1.wav");
+     }
+     public void UnloadAndroidAudio()
+     {
+          AndroidNativeAudio.unload(FileID);
+          AndroidNativeAudio.releasePool();
+     }
+     public void PlayStringChannelIOS(int channelIndex)
     {
         if (NativeAudio.Initialized == false) return;
 
@@ -147,7 +184,8 @@ public class TouchAudioHandler : MonoBehaviour
 
     public void playTone()
     {
-        int LRUIndex = channelIndex; // fadeFlags.Length == sources.Length
+#if UNITY_IOS
+          int LRUIndex = channelIndex; // fadeFlags.Length == sources.Length
         if (fadeFlags[LRUIndex] == 1)
             fadeFlags[LRUIndex] = 2;
         stopToneFadeOut();
@@ -160,8 +198,10 @@ public class TouchAudioHandler : MonoBehaviour
 
         SetVolumeStringChannelIOS(channelIds[channelIndex], baseVolume);
         PlayStringChannelIOS(channelIds[channelIndex]);
-
-        Debug.Log("[Unity] Played tone for Channel ID: " + channelIds[channelIndex] + " attempted channel index: " + channelIndex + " | Time: " + SwiftTouch.GetCurrentDateTimeAsString());
+#elif UNITY_ANDROID
+          AndroidNativeAudio.play(FileID);
+#endif
+          Debug.Log("[Unity] Played tone for Channel ID: " + channelIds[channelIndex] + " attempted channel index: " + channelIndex + " | Time: " + SwiftTouch.GetCurrentDateTimeAsString());
         //setPitch();
     }
 

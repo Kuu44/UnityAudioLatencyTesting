@@ -23,7 +23,7 @@ namespace SwiftGameDev.Touch
         public static TouchData[] CurrentTouches;
 
         // Define an Action that can be subscribed to
-        public static Action<TouchData[]> OnTouchesReceived;
+        public static Action OnTouchesReceived;
 
         public static void Start()
         {
